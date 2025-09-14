@@ -8,23 +8,35 @@ on:
 
 jobs:
   build:
-    runs-on: windows-2022
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ windows-2022, ubuntu-24.04 ]
+        include:
+          - os: windows-2022
+            preset: vs2022-windows
+            build_dir: vsbuild
+          - os: ubuntu-24.04
+            preset: linux
+            build_dir: build
+
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
 
       - name: Configure Helper
         shell: pwsh
         run: |
-          cmake --preset vs2022-windows "-DCMAKE_INSTALL_PREFIX=install"
+          cmake --preset ${{ matrix.preset }} "-DCMAKE_INSTALL_PREFIX=install"
 
       - name: Build Helper
-        run: cmake --build vsbuild --config RelWithDebInfo
+        run: cmake --build ${{ matrix.build_dir }} --config RelWithDebInfo
 
       - name: Install Helper
-        run: cmake --install vsbuild --config RelWithDebInfo
+        run: cmake --install ${{ matrix.build_dir }} --config RelWithDebInfo
 
       - name: Upload Helper artifact
         uses: actions/upload-artifact@master
         with:
-          name: Helper
+          name: Helper-${{ runner.os }}
           path: ./install
